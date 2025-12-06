@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Chiamata vocale</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #111;
+      color: #fff;
+    }
+    .screen {
+      max-width: 600px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    header .title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .status {
+      font-size: 14px;
+      min-height: 20px;
+    }
+    .timer {
+      font-size: 16px;
+      margin-top: 4px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-call { background: #25D366; color: #fff; }
+    .btn-answer { background: #10B981; color: #fff; }
+    .btn-end { background: #EF4444; color: #fff; }
+    .btn-back { background: #4B5563; color: #fff; }
+    .btn-disabled { opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <header>
+      <div>
+        <div class="title">Chiamata vocale</div>
+        <div id="roomLabel"></div>
+      </div>
+      <button id="backBtn" class="btn btn-back">💬 Chat</button>
+    </header>
+
+    <main>
+      <div class="status" id="statusText">Pronto per la chiamata</div>
+      <div class="timer" id="timerText"></div>
+
+      <div class="buttons">
+        <button id="callBtn" class="btn btn-call">📞 Chiama</button>
+        <button id="answerBtn" class="btn btn-answer btn-disabled" disabled>✅ Rispondi</button>
+        <button id="endBtn" class="btn btn-end btn-disabled" disabled>🔴 Termina</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+  <script>
+    // STANZA
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room") || "chatcimino1";
+    document.getElementById("roomLabel").textContent = "Stanza: " + room;
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      const url = "index.html";
+      window.location.href = url;
+    });
+
+    // FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzrXe97__7ANwKu2Z5S-wHoOVNZrjpQN8",
+      authDomain: "chat-cimino.firebaseapp.com",
+      databaseURL: "https://chat-cimino-default-rtdb.firebaseio.com",
+      projectId: "chat-cimino",
+      storageBucket: "chat-cimino.firebasestorage.app",
+      messagingSenderId: "1069237537564",
+      appId: "1:1069237537564:web:c09ab62c809bd6d395c8d9"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const callRef = db.ref("calls/" + room);
+
+    const statusText = document.getElementById("statusText");
+    const timerText = document.getElementById("timerText");
+    const callBtn = document.getElementById("callBtn");
+    const answerBtn = document.getElementById("answerBtn");
+    const endBtn = document.getElementById("endBtn");
+
+    let pc = null;
+    let localStream = null;
+    let isCaller = false;
+    let timerInterval = null;
+    let startTime = null;
+
+    function setStatus(t) { statusText.textContent = t; }
+    function enable(btn, on) {
+      btn.disabled = !on;
+      btn.classList.toggle("btn-disabled", !on);
+    }
+    function startTimer() {
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const diff = Math.floor((Date.now() - startTime) / 1000);
+        const m = String(Math.floor(diff / 60)).padStart(2,"0");
+        const s = String(diff % 60).padStart(2,"0");
+        timerText.textContent = m + ":" + s;
+      }, 1000);
+    }
+    function stopTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      timerText.textContent = "";
+    }
+
+    const iceConfig = {
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+    };
+
+    async function createPeerConnection() {
+      pc = new RTCPeerConnection(iceConfig);
+
+      pc.onicecandidate = e => {
+        if (e.candidate) {
+          const candRef = callRef.child(isCaller ? "callerCandidates" : "calleeCandidates");
+          candRef.push(e.candidate.toJSON());
+        }
+      };
+
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      }
+      localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    }
+
+    function resetUI() {
+      enable(callBtn, true);
+      enable(answerBtn, false);
+      enable(endBtn, false);
+      setStatus("Pronto per la chiamata");
+      stopTimer();
+    }
+
+    // CALLER
+    callBtn.addEventListener("click", async () => {
+      try {
+        isCaller = true;
+        enable(callBtn, false);
+        enable(answerBtn, false);
+        enable(endBtn, true);
+        setStatus("Sto chiamando...");
+
+        await createPeerConnection();
+        await callRef.set(null);
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await callRef.child("offer").set({
+          type: offer.type,
+          sdp: offer.sdp
+        });
+        await callRef.child("status").set("calling");
+
+        callRef.child("answer").on("value", async snap => {
+          const ans = snap.val();
+          if (!ans || !pc || pc.currentRemoteDescription) return;
+          await pc.setRemoteDescription(new RTCSessionDescription(ans));
+          setStatus("In chiamata");
+          startTimer();
+        });
+
+        callRef.child("calleeCandidates").on("child_added", snap => {
+          const c = snap.val();
+          if (c && pc) pc.addIceCandidate(new RTCIceCandidate(c));
+        });
+
+        callRef.child("status").on("value", snap => {
+          if (snap.val() === "ended") {
+            endLocal("Chiamata terminata dall'altro utente");
+          }
+        });
+      } catch(e) {
+        console.error(e);
+        setStatus("Errore: " + e.message);
+        resetUI();
+      }
+    });
+
+    // CALLEE
+    callRef.child("offer").on("value", snap => {
+      const offer = snap.val();
+      if (!offer) return;
+      if (!isCaller) {
+        setStatus("Chiamata in arrivo");
+        enable(answerBtn, true);
+      }
+    });
+
+    answerBtn.addEventListener("click", async () => {
+      try {
+        isCaller = false;
+        enable(answerBtn, false);
+        enable(callBtn, false);
+        enable(endBtn, true);
+        setStatus("Connessione...");
+
+        await createPeerConnection();
+        const offerSnap = await callRef.child("offer").get();
+        const offer = offerSnap.val();
+        if (!offer) {
+          setStatus("Nessuna chiamata trovata");
+          resetUI();
+          return;
+        }
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await callRef.child("answer").set({
+          type: answer.type,
+          sdp: answer.sdp
+        });
+        await callRef.child("status").set("in-call");
+
+        callRef.child("callerCandidates").on("child_added", snap => {
+          const c = snap.val();
+          if (c && pc) pc.addIceCandidate(new RTCIceCandidate(c));
+        });
+
+        callRef.child("status").on("value", snap => {
+          if (snap.val() === "ended") {
+            endLocal("Chiamata terminata dall'altro utente");
+          }
+        });
+
+        setStatus("In chiamata");
+        startTimer();
+      } catch(e) {
+        console.error(e);
+        setStatus("Errore nella risposta: " + e.message);
+        resetUI();
+      }
+    });
+
+    // END
+    endBtn.addEventListener("click", async () => {
+      await callRef.child("status").set("ended");
+      endLocal("Chiamata terminata");
+    });
+
+    function endLocal(msg) {
+      setStatus(msg);
+      stopTimer();
+      enable(endBtn, false);
+      enable(callBtn, true);
+      enable(answerBtn, false);
+
+      if (pc) { pc.close(); pc = null; }
+      if (localStream) {
+        localStream.getTracks().forEach(t => t.stop());
+        localStream = null;
+      }
+    }
+  </script>
+</body>
+</html>
