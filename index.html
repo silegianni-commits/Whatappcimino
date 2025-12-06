@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Cimino 1</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root {
+      --app-bg: #e5ddd5;
+      --header-bg: #075E54;
+      --my-msg-bg: #dcf8c6;
+      --other-msg-bg: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--app-bg);
+    }
+
+    .app {
+      max-width: 600px;
+      margin: 0 auto;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: rgba(240,240,240,0.9);
+      border-left: 1px solid #bfbfbf;
+      border-right: 1px solid #bfbfbf;
+      background-size: cover;
+      background-position: center;
+    }
+
+    /* HEADER STILE WHATSAPP */
+    header {
+      padding: 8px 10px;
+      background: var(--header-bg);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #128C7E;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 600;
+      border: 2px solid rgba(255,255,255,0.8);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .header-title {
+      display: flex;
+      flex-direction: column;
+    }
+    .header-title .name {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .header-title .status {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .round-btn {
+      border: none;
+      background: #25D366;
+      color: white;
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .round-btn.settings {
+      background: #128C7E;
+    }
+
+    .name-bar {
+      font-size: 12px;
+      padding: 4px 10px;
+      color: #555;
+      border-bottom: 1px solid #ddd;
+      background: rgba(249,249,249,0.95);
+    }
+    .name-bar input {
+      width: 100%;
+      padding: 6px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    /* CORPO CHAT */
+    .content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* COLONNA MESSAGGI */
+    .chat-column {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #ddd;
+      min-width: 0;
+    }
+
+    #messages {
+      flex: 1;
+      list-style: none;
+      margin: 0;
+      padding: 10px 8px;
+      overflow-y: auto;
+    }
+
+    .msg-row {
+      display: flex;
+      margin-bottom: 8px;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .msg-row.me {
+      justify-content: flex-end;
+    }
+    .msg-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #c4c4c4;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .msg-bubble {
+      max-width: 75%;
+      padding: 7px 9px;
+      border-radius: 12px;
+      background: var(--other-msg-bg);
+      font-size: 14px;
+      box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    }
+    .msg-row.me .msg-bubble {
+      background: var(--my-msg-bg);
+    }
+    .msg-name {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: #075E54;
+    }
+    .msg-text {
+      font-size: 14px;
+    }
+    .media {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 4px;
+      display: block;
+    }
+    video.media {
+      background: #000;
+    }
+    audio {
+      width: 100%;
+      margin-top: 4px;
+    }
+    .msg-meta {
+      font-size: 10px;
+      color: #666;
+      margin-top: 4px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+    .tick {
+      font-size: 12px;
+    }
+
+    .reactions {
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    .reactions span {
+      margin-right: 4px;
+    }
+    .reaction-buttons {
+      margin-top: 2px;
+      font-size: 14px;
+      text-align: right;
+    }
+    .reaction-buttons button {
+      border: none;
+      background: transparent;
+      padding: 0 4px;
+      font-size: 16px;
+    }
+
+    #typing {
+      padding: 0 10px 4px 10px;
+      font-size: 12px;
+      color: #555;
+      min-height: 16px;
+    }
+
+    .emoji-bar {
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.95);
+      border-top: 1px solid #ddd;
+      display: flex;
+      gap: 6px;
+    }
+    .emoji-bar button {
+      font-size: 20px;
+      border: none;
+      background: transparent;
+    }
+
+    form {
+      display: flex;
+      padding: 8px;
+      border-top: 1px solid #ddd;
+      background: rgba(250,250,250,0.95);
+      gap: 6px;
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      font-size: 15px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      outline: none;
+    }
+    .attach-btn {
+      border: none;
+      background: transparent;
+      font-size: 22px;
+      padding: 4px;
+    }
+    .send-btn {
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: none;
+      background: #25D366;
+      color: white;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    /* COLONNA MEDIA (CRONOLOGIA FOTO/VIDEO) */
+    .media-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: rgba(250,250,250,0.95);
+    }
+    .media-header {
+      padding: 6px 8px;
+      border-bottom: 1px solid #ddd;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .media-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 6px;
+    }
+    .media-item {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #eee;
+    }
+    .media-item img,
+    .media-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .media-item span {
+      position: absolute;
+      bottom: 2px;
+      right: 4px;
+      font-size: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+
+    /* PANNELLO IMPOSTAZIONI */
+    .settings-panel {
+      position: fixed;
+      inset: auto 0 0 0;
+      max-width: 600px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid #ccc;
+      box-shadow: 0 -2px 6px rgba(0,0,0,0.2);
+      padding: 8px 10px;
+      font-size: 12px;
+      display: none;
+      z-index: 20;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .settings label {
+      min-width: 100px;
+      font-size: 11px;
+    }
+    .settings input[type="color"] {
+      width: 32px;
+      height: 18px;
+      padding: 0;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .settings input[type="file"] {
+      font-size: 11px;
+    }
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .settings-close {
+      border: none;
+      background: transparent;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="header-left">
+        <div class="header-avatar" id="headerAvatar">C</div>
+        <div class="header-title">
+          <div class="name" id="roomNameLabel">Chat Cimino</div>
+          <div class="status" id="statusLabel">Ultimo accesso...</div>
+        </div>
+      </div>
+      <div class="header-buttons">
+        <button id="videoBtn" class="round-btn">📹</button>
+        <button id="callBtn" class="round-btn">📞</button>
+        <button id="settingsBtn" class="round-btn settings">⚙️</button>
+      </div>
+    </header>
+
+    <div class="name-bar">
+      Il tuo nome:
+      <input id="nameInput" type="text" placeholder="Es. Mario">
+    </div>
+
+    <div class="content">
+      <!-- COLONNA CHAT -->
+      <div class="chat-column">
+        <ul id="messages"></ul>
+        <div id="typing"></div>
+
+        <div class="emoji-bar">
+          <button type="button" class="emoji-btn">😀</button>
+          <button type="button" class="emoji-btn">😂</button>
+          <button type="button" class="emoji-btn">❤️</button>
+          <button type="button" class="emoji-btn">👍</button>
+        </div>
+
+        <form id="form">
+          <button type="button" id="attachBtn" class="attach-btn">📎</button>
+          <input id="fileInput" type="file" accept="image/*,video/*" style="display:none;">
+          <input id="input" type="text" placeholder="Scrivi un messaggio...">
+          <button type="button" id="voiceBtn" class="attach-btn">🎤</button>
+          <button type="submit" class="send-btn">Invia</button>
+        </form>
+      </div>
+
+      <!-- COLONNA MEDIA -->
+      <div class="media-column">
+        <div class="media-header">Media (foto & video)</div>
+        <div id="mediaList" class="media-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANNELLO IMPOSTAZIONI -->
+  <div id="settingsPanel" class="settings-panel">
+    <div class="settings-header">
+      <span>Impostazioni chat</span>
+      <button class="settings-close" id="closeSettingsBtn">✖</button>
+    </div>
+    <div class="settings">
+      <div class="settings-row">
+        <label>Colore header</label>
+        <input type="color" id="colorHeader">
+        <label>Bg app</label>
+        <input type="color" id="colorApp">
+      </div>
+      <div class="settings-row">
+        <label>Messaggi miei</label>
+        <input type="color" id="colorMy">
+        <label>Messaggi altri</label>
+        <input type="color" id="colorOther">
+      </div>
+      <div class="settings-row">
+        <label>Sfondo chat (galleria)</label>
+        <input type="file" id="bgInput" accept="image/*">
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+  <script>
+    // ===== STANZA UNICA (tipo gruppo generale) =====
+    const room = "chatcimino1";
+
+    // ===== FIREBASE =====
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzrXe97__7ANwKu2Z5S-wHoOVNZrjpQN8",
+      authDomain: "chat-cimino.firebaseapp.com",
+      databaseURL: "https://chat-cimino-default-rtdb.firebaseio.com",
+      projectId: "chat-cimino",
+      storageBucket: "chat-cimino.firebasestorage.app",
+      messagingSenderId: "1069237537564",
+      appId: "1:1069237537564:web:c09ab62c809bd6d395c8d9"
+    };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const roomRef = db.ref("rooms/" + room);
+    const messagesRef = roomRef.child("messages");
+    const typingRef = roomRef.child("typing");
+    const presenceRef = roomRef.child("presence");
+
+    // ===== ELEMENTI =====
+    const appDiv = document.getElementById("app");
+    const roomNameLabel = document.getElementById("roomNameLabel");
+    const statusLabel = document.getElementById("statusLabel");
+    const headerAvatar = document.getElementById("headerAvatar");
+    const nameInput = document.getElementById("nameInput");
+    const messagesList = document.getElementById("messages");
+    const typingDiv = document.getElementById("typing");
+    const form = document.getElementById("form");
+    const input = document.getElementById("input");
+    const fileInput = document.getElementById("fileInput");
+    const attachBtn = document.getElementById("attachBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
+    const videoBtn = document.getElementById("videoBtn");
+    const callBtn = document.getElementById("callBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const closeSettingsBtn = document.getElementById("closeSettingsBtn");
+    const mediaList = document.getElementById("mediaList");
+
+    const colorHeader = document.getElementById("colorHeader");
+    const colorApp   = document.getElementById("colorApp");
+    const colorMy    = document.getElementById("colorMy");
+    const colorOther = document.getElementById("colorOther");
+    const bgInput    = document.getElementById("bgInput");
+
+    // ===== UTILS =====
+    function getName() {
+      return nameInput.value.trim() || "Anonimo";
+    }
+    function nameKey(name) {
+      return (name || "").trim().replace(/\W/g, "_") || "Anonimo";
+    }
+    function initials(name) {
+      const parts = (name || "").trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+      return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
+    }
+    function formatTime(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+    }
+    function formatLastSeen(ts) {
+      if (!ts) return "";
+      const d = new Date(ts);
+      return "Ultimo accesso: " + d.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
+    }
+
+    // nome salvato
+    try {
+      const savedName = localStorage.getItem("chatNameDefault");
+      if (savedName) nameInput.value = savedName;
+    } catch(e){}
+    nameInput.addEventListener("change", () => {
+      try { localStorage.setItem("chatNameDefault", nameInput.value); } catch(e){}
+    });
+
+    // meta room (nome fisso)
+    roomRef.child("meta").update({ displayName: "Chat Cimino 1" });
+    roomNameLabel.textContent = "Chat Cimino 1";
+    headerAvatar.textContent = initials("Chat Cimino 1");
+
+    // ===== THEME =====
+    const DEFAULT_THEME = {
+      header: "#075E54",
+      app: "#e5ddd5",
+      my: "#dcf8c6",
+      other: "#ffffff",
+      bgImage: null
+    };
+    function loadTheme() {
+      try {
+        const saved = localStorage.getItem("chatThemeCimino1");
+        if (!saved) return DEFAULT_THEME;
+        const parsed = JSON.parse(saved);
+        return Object.assign({}, DEFAULT_THEME, parsed);
+      } catch(e){ return DEFAULT_THEME; }
+    }
+    function applyTheme(t) {
+      document.documentElement.style.setProperty("--header-bg", t.header);
+      document.documentElement.style.setProperty("--app-bg", t.app);
+      document.documentElement.style.setProperty("--my-msg-bg", t.my);
+      document.documentElement.style.setProperty("--other-msg-bg", t.other);
+      colorHeader.value = t.header;
+      colorApp.value   = t.app;
+      colorMy.value    = t.my;
+      colorOther.value = t.other;
+      if (t.bgImage) appDiv.style.backgroundImage = "url('" + t.bgImage + "')";
+      else appDiv.style.backgroundImage = "none";
+    }
+    function saveTheme(t) {
+      localStorage.setItem("chatThemeCimino1", JSON.stringify(t));
+    }
+    let currentTheme = loadTheme();
+    applyTheme(currentTheme);
+    function updateTheme() {
+      currentTheme.header = colorHeader.value;
+      currentTheme.app    = colorApp.value;
+      currentTheme.my     = colorMy.value;
+      currentTheme.other  = colorOther.value;
+      applyTheme(currentTheme);
+      saveTheme(currentTheme);
+    }
+    colorHeader.addEventListener("input", updateTheme);
+    colorApp.addEventListener("input", updateTheme);
+    colorMy.addEventListener("input", updateTheme);
+    colorOther.addEventListener("input", updateTheme);
+    bgInput.addEventListener("change", () => {
+      const file = bgInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        currentTheme.bgImage = e.target.result;
+        applyTheme(currentTheme);
+        saveTheme(currentTheme);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // pannello impostazioni
+    settingsBtn.addEventListener("click", () => {
+      settingsPanel.style.display = "block";
+    });
+    closeSettingsBtn.addEventListener("click", () => {
+      settingsPanel.style.display = "none";
+    });
+
+    // ===== EMOJI =====
+    document.querySelectorAll(".emoji-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        input.value += btn.textContent;
+        input.focus();
+      });
+    });
+
+    // ===== ALLEGATI FOTO/VIDEO =====
+    attachBtn.addEventListener("click", () => fileInput.click());
+
+    // ===== INVIO MESSAGGI =====
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      const file = fileInput.files[0];
+      if (!text && !file) return;
+      if (file) sendFileMessage(file, text);
+      else sendTextMessage(text);
+    });
+
+    function updateLastMessageMeta(msg) {
+      roomRef.child("meta/lastMessage").set({
+        from: msg.name,
+        text: msg.type === "audio"
+          ? "🎤 Messaggio vocale"
+          : (msg.text || (msg.type === "image" ? "📷 Foto" : msg.type === "video" ? "🎬 Video" : "")),
+        type: msg.type,
+        createdAt: msg.createdAt
+      });
+    }
+
+    function sendTextMessage(text) {
+      const msg = {
+        name: getName(),
+        type: "text",
+        text,
+        createdAt: Date.now()
+      };
+      const ref = messagesRef.push(msg);
+      updateLastMessageMeta(msg);
+      markSeenForSelf(ref.key);
+      input.value = "";
+    }
+
+    function sendFileMessage(file, caption) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        let type = "file";
+        if (file.type.startsWith("image/")) type = "image";
+        else if (file.type.startsWith("video/")) type = "video";
+
+        const msg = {
+          name: getName(),
+          type,
+          mediaData: e.target.result,
+          text: caption || "",
+          createdAt: Date.now()
+        };
+        const ref = messagesRef.push(msg);
+        updateLastMessageMeta(msg);
+        markSeenForSelf(ref.key);
+        input.value = "";
+        fileInput.value = "";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ===== MESSAGGI VOCALI =====
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+
+    voiceBtn.addEventListener("click", async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+          recordedChunks = [];
+          mediaRecorder = new MediaRecorder(stream);
+
+          mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) {
+              recordedChunks.push(e.data);
+            }
+          };
+
+          mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: "audio/webm" });
+            const reader = new FileReader();
+            reader.onload = ev => {
+              const audioData = ev.target.result;
+              const msg = {
+                name: getName(),
+                type: "audio",
+                audioData,
+                createdAt: Date.now()
+              };
+              const ref = messagesRef.push(msg);
+              updateLastMessageMeta(msg);
+              markSeenForSelf(ref.key);
+            };
+            reader.readAsDataURL(blob);
+            stream.getTracks().forEach(t => t.stop());
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          voiceBtn.textContent = "⏹";
+        } catch(e) {
+          console.error(e);
+          alert("Errore microfono: " + e.message);
+        }
+      } else {
+        if (mediaRecorder) mediaRecorder.stop();
+        isRecording = false;
+        voiceBtn.textContent = "🎤";
+      }
+    });
+
+    // ===== RENDER MESSAGGI + MEDIA HISTORY =====
+    function renderOrUpdateMessage(snapshot) {
+      const msg = snapshot.val();
+      const id = snapshot.key;
+
+      let row = messagesList.querySelector('.msg-row[data-id="'+id+'"]');
+      if (!row) {
+        row = document.createElement("li");
+        row.className = "msg-row";
+        row.dataset.id = id;
+        messagesList.appendChild(row);
+      }
+      row.innerHTML = "";
+
+      const isMe = msg.name === getName();
+      if (isMe) row.classList.add("me"); else row.classList.remove("me");
+
+      const avatar = document.createElement("div");
+      avatar.className = "msg-avatar";
+      avatar.textContent = initials(msg.name);
+
+      const bubble = document.createElement("div");
+      bubble.className = "msg-bubble";
+
+      const nameDiv = document.createElement("div");
+      nameDiv.className = "msg-name";
+      nameDiv.textContent = msg.name;
+      bubble.appendChild(nameDiv);
+
+      const textDiv = document.createElement("div");
+      textDiv.className = "msg-text";
+      textDiv.textContent = msg.text || "";
+      bubble.appendChild(textDiv);
+
+      if (msg.type === "image" && msg.mediaData) {
+        const img = document.createElement("img");
+        img.src = msg.mediaData;
+        img.className = "media";
+        bubble.appendChild(img);
+        addMediaItem(id, "image", msg.mediaData, msg.createdAt);
+      } else if (msg.type === "video" && msg.mediaData) {
+        const video = document.createElement("video");
+        video.src = msg.mediaData;
+        video.className = "media";
+        video.controls = true;
+        bubble.appendChild(video);
+        addMediaItem(id, "video", msg.mediaData, msg.createdAt);
+      } else if (msg.type === "audio" && msg.audioData) {
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.src = msg.audioData;
+        bubble.appendChild(audio);
+      }
+
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "msg-meta";
+      const timeSpan = document.createElement("span");
+      timeSpan.textContent = formatTime(msg.createdAt);
+      metaDiv.appendChild(timeSpan);
+
+      if (isMe) {
+        const tickSpan = document.createElement("span");
+        tickSpan.className = "tick";
+        const seenBy = msg.seenBy || {};
+        const others = Object.keys(seenBy).filter(k => k !== nameKey(getName()));
+        tickSpan.textContent = others.length > 0 ? "✓✓" : "✓";
+        metaDiv.appendChild(tickSpan);
+      }
+
+      bubble.appendChild(metaDiv);
+
+      if (msg.reactions) {
+        const reactionsDiv = document.createElement("div");
+        reactionsDiv.className = "reactions";
+        Object.entries(msg.reactions).forEach(([emoji,count]) => {
+          const span = document.createElement("span");
+          span.textContent = emoji + " " + count;
+          reactionsDiv.appendChild(span);
+        });
+        bubble.appendChild(reactionsDiv);
+      }
+
+      const reactDiv = document.createElement("div");
+      reactDiv.className = "reaction-buttons";
+      ["👍","❤️","😂"].forEach(emoji => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = emoji;
+        btn.addEventListener("click", () => addReaction(id, emoji));
+        reactDiv.appendChild(btn);
+      });
+      bubble.appendChild(reactDiv);
+
+      if (isMe) {
+        row.appendChild(bubble);
+        row.appendChild(avatar);
+      } else {
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+      }
+
+      messagesList.scrollTop = messagesList.scrollHeight;
+    }
+
+    messagesRef.on("child_added", snap => {
+      renderOrUpdateMessage(snap);
+      const msg = snap.val();
+      if (msg.name !== getName()) markSeenForSelf(snap.key);
+    });
+    messagesRef.on("child_changed", renderOrUpdateMessage);
+
+    function addReaction(messageId, emoji) {
+      const reactRef = messagesRef.child(messageId).child("reactions");
+      reactRef.transaction(current => {
+        current = current || {};
+        const count = current[emoji] || 0;
+        return Object.assign({}, current, { [emoji]: count + 1 });
+      });
+    }
+
+    // ===== MEDIA HISTORY PANNELLO =====
+    function addMediaItem(id, type, dataUrl, createdAt) {
+      if (!dataUrl) return;
+      if (mediaList.querySelector('[data-id="'+id+'"]')) return;
+
+      const item = document.createElement("div");
+      item.className = "media-item";
+      item.dataset.id = id;
+
+      if (type === "image") {
+        const img = document.createElement("img");
+        img.src = dataUrl;
+        item.appendChild(img);
+      } else {
+        const vid = document.createElement("video");
+        vid.src = dataUrl;
+        item.appendChild(vid);
+      }
+
+      const timeLabel = document.createElement("span");
+      timeLabel.textContent = formatTime(createdAt);
+      item.appendChild(timeLabel);
+
+      mediaList.appendChild(item);
+    }
+
+    // ===== STA SCRIVENDO =====
+    let typingTimeout;
+    input.addEventListener("input", () => {
+      const key = nameKey(getName());
+      typingRef.child(key).set(true);
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        typingRef.child(key).remove();
+      }, 1500);
+    });
+    typingRef.on("value", snap => {
+      const data = snap.val();
+      typingDiv.textContent = data ? "Qualcuno sta scrivendo..." : "";
+    });
+
+    // ===== ONLINE / ULTIMO ACCESSO =====
+    const myPresenceRef = presenceRef.child(nameKey(getName()));
+    function setOnline() {
+      myPresenceRef.set({online:true, lastSeen: firebase.database.ServerValue.TIMESTAMP});
+    }
+    function setOffline() {
+      myPresenceRef.set({online:false, lastSeen: firebase.database.ServerValue.TIMESTAMP});
+    }
+    window.addEventListener("focus", setOnline);
+    window.addEventListener("blur", setOffline);
+    window.addEventListener("beforeunload", setOffline);
+    setOnline();
+
+    presenceRef.on("value", snap => {
+      const data = snap.val() || {};
+      let anyOnline = false;
+      let lastSeenTs = 0;
+      Object.entries(data).forEach(([k,v]) => {
+        if (k === nameKey(getName())) return;
+        if (v.online) anyOnline = true;
+        if (v.lastSeen && v.lastSeen > lastSeenTs) lastSeenTs = v.lastSeen;
+      });
+      if (anyOnline) statusLabel.textContent = "Online";
+      else if (lastSeenTs) statusLabel.textContent = formatLastSeen(lastSeenTs);
+      else statusLabel.textContent = "Ultimo accesso sconosciuto";
+    });
+
+    // ===== SEEN BY =====
+    function markSeenForSelf(messageId) {
+      const key = nameKey(getName());
+      messagesRef.child(messageId).child("seenBy").child(key)
+        .set(firebase.database.ServerValue.TIMESTAMP);
+    }
+
+    // ===== BOTTONI CHIAMATE =====
+    callBtn.addEventListener("click", () => {
+      const url = "call.html?room=" + encodeURIComponent(room);
+      window.location.href = url;
+    });
+    videoBtn.addEventListener("click", () => {
+      const url = "videocall.html?room=" + encodeURIComponent(room);
+      window.location.href = url;
+    });
+  </script>
+</body>
+</html>
